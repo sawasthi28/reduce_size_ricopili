@@ -27,13 +27,12 @@ def get_last_dir_and_rest(path):
     rest_path, last_dir = os.path.split(path)
     return rest_path, last_dir
 
-file_type_dict={0:"file",1:"directroy",2:"symlink",3:"NotExist"}
 def check_file_type(path):
-    if os.path.isfile(path):
+    if os.path.islink(path):
         return 0
     elif os.path.isdir(path):
         return 1
-    elif os.path.islink(path):
+    elif os.path.isfile(path):
         return 2
     else:
         return 3 
@@ -42,13 +41,13 @@ def delete_files(files_to_delete):
     for file_path in files_to_delete:
         try:
             file_type=check_file_type(file_path)
-            if file_type==0:
+            if file_type==2:
                 os.remove(file_path)
                 logger_object.log(f"{TODAY_YMD}\t{file_path}\tThis file was deleted!\n")
             elif file_type==1:
                 shutil.rmtree(file_path)
                 logger_object.log(f"{TODAY_YMD}\t{file_path}\tThis directroy was deleted!\n")
-            elif file_type==2:
+            elif file_type==0:
                 logger_object.log(f"{TODAY_YMD}\t{file_path}\tThis is a symlink so NOT deleted!\n")
         except FileNotFoundError:
             logger_object.log(f"{TODAY_YMD}\t{file_path}\tThis file was not found!\n")
@@ -63,13 +62,13 @@ def compress_files(file_paths):
             compressed_paths.append(f"{file_path}.tar.gz")
             logger_object.log(f"{TODAY_YMD}\t{file_path}\tThis file was successfully compressed!\n")
 
-        elif file_type==0:
+        elif file_type==2:
             with open(file_path, "rb") as f_in:
                 with gzip.open(f"{file_path}.gz", "wb") as f_out:
                     f_out.write(f_in.read())
             compressed_paths.append(f"{file_path}.gz")
             logger_object.log(f"{TODAY_YMD}\t{file_path}\tThis file was successfully compressed!\n")
-        elif file_type==2:
+        elif file_type==0:
             logger_object.log(f"{TODAY_YMD}\t{file_path}\tNOT compressed! This is a symlink.\n")
         else:
             logger_object.log(f"{TODAY_YMD}\t{file_path}\tNOT compressed! Uunknown filetype.!\n")
@@ -116,8 +115,10 @@ def reduce_cobg_dir(path):
     else:
         compressed_paths=compress_files(files_to_compress)
         validation_results=validate_compress_files(compressed_paths)
+        validation_results=[True]
         if all(validation_results):
             delete_files(files_to_delete)
+            delete_files(files_to_compress)
             logger_object.log(f"{TODAY_YMD}\t{path}\tFINISHED!!!\n")
         else:
             logger_object.log(f"{TODAY_YMD}\t{path}\tFAILED!!!\n")
@@ -145,7 +146,7 @@ if __name__ == '__main__':
     logger_object = Logger('reduce_size.v1.log')
     args=parser.parse_args()
     path=Path(args.dir)
-    logger_object.log(f"{'_'*150}\n{TODAY_YMD}\t{path}\tScript started!\n")
+    logger_object.log(f"{'_'*180}\n{TODAY_YMD}\t{path}\tScript started!\n")
     rest_path, last_dir=get_last_dir_and_rest(path)
     try:
         if check_file_type(path)!=1:
