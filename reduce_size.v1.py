@@ -10,6 +10,7 @@ import datetime
 import gzip
 import tarfile
 import shutil
+import contextlib
 from pathlib import Path
 
 parser=argparse.ArgumentParser()
@@ -80,16 +81,16 @@ def validate_compress_files(compressed_paths):
         if file_path.endswith('.tar.gz'):
             # Validate .tar.gz file
             try:
-                subprocess.check_call(['tar', 'tzf', file_path])
-                logger_object.log(f"{TODAY_YMD}\t{file_path}\tValidation of zipped file was successfull!\n")
+                subprocess.check_call(['tar', 'tzf', file_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                logger_object.log(f"{TODAY_YMD}\t{file_path}\tValidation of zipped file was Successfull!\n")
             except subprocess.CalledProcessError:
-                logger_objecy.log(f"{TODAY_YMD}\t{file_path}\tValidation of this zipped file failed!\n")
+                logger_object.log(f"{TODAY_YMD}\t{file_path}\tValidation of this zipped file Failed!\n")
                 validation_results.append(False)
         elif file_path.endswith('.gz'):
             # Validate .gz file
             try:
                 subprocess.check_call(['gunzip', '-t', file_path])
-                logger_object.log(f"{TODAY_YMD}\t{file_path}\tValidation of zipped file was successfull!\n")
+                logger_object.log(f"{TODAY_YMD}\t{file_path}\tValidation of zipped file was Successfull!\n")
             except subprocess.CalledProcessError:
                 logger_object.log(f"{TODAY_YMD}\t{file_path}\tValidation of zipped file was Failed!\n")
                 validation_results.append(False)
@@ -115,7 +116,7 @@ def reduce_cobg_dir(path):
     else:
         compressed_paths=compress_files(files_to_compress)
         validation_results=validate_compress_files(compressed_paths)
-        validation_results=[True]
+        
         if all(validation_results):
             delete_files(files_to_delete)
             delete_files(files_to_compress)
@@ -136,6 +137,7 @@ def reduce_tmp_report(path):
     delete_files(files_to_delete)
     compressed_paths=compress_files(files_to_compress)
     validation_results=validate_compress_files(compressed_paths)
+    
     if all(validation_results):
         delete_files(files_to_compress)
         logger_object.log(f"{TODAY_YMD}\t{path}\tFINISHED!!!\n")
@@ -146,7 +148,7 @@ if __name__ == '__main__':
     logger_object = Logger('reduce_size.v1.log')
     args=parser.parse_args()
     path=Path(args.dir)
-    logger_object.log(f"{'_'*180}\n{TODAY_YMD}\t{path}\tScript started!\n")
+    logger_object.log(f"{'_'*200}\n{TODAY_YMD}\t{path}\tScript started!\n")
     rest_path, last_dir=get_last_dir_and_rest(path)
     try:
         if check_file_type(path)!=1:
