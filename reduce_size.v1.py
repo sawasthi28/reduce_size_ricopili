@@ -25,9 +25,9 @@ class Logger(object):
     def log(self, line):
         self.log_fh.write(f"{self.TODAY_YMD}\t{line}\n")
 
-def write_logs(line):
+def write_logs(path, line):
     logger_object = Logger('reduce_size.v1.log')
-    logger_object.log(f"{line}")
+    logger_object.log(f"{path}\t{line}")
 
 def get_last_dir_and_rest(path):
     rest_path, last_dir = os.path.split(path)
@@ -49,14 +49,14 @@ def delete_files(files_to_delete):
             file_type=check_file_type(file_path)
             if file_type==2:
                 os.remove(file_path)
-                write_logs(f"{file_path}\tThis file was deleted!")
+                write_logs(file_path, "This file was deleted!")
             elif file_type==1:
                 shutil.rmtree(file_path)
-                write_logs(f"{file_path}\tThis directroy was deleted!")
+                write_logs(file_path, "This directroy was deleted!")
             elif file_type==0:
-                write_logs(f"{file_path}\tThis is a symlink so NOT deleted!")
+                write_logs(file_path, "This is a symlink so NOT deleted!")
         except FileNotFoundError:
-            write_logs(f"{file_path}\tThis file was not found!")
+            write_logs(file_path, "This file was not found!")
 
 def compress_files(file_paths):
     compressed_paths=[]
@@ -66,18 +66,18 @@ def compress_files(file_paths):
             with tarfile.open(f"{file_path}.tar.gz", "w:gz") as tar:
                 tar.add(path, arcname=os.path.basename(file_path))
             compressed_paths.append(f"{file_path}.tar.gz")
-            write_logs(f"{file_path}\tThis file was successfully compressed!")
+            write_logs(file_path, "This file was successfully compressed!")
 
         elif file_type==2:
             with open(file_path, "rb") as f_in:
                 with gzip.open(f"{file_path}.gz", "wb") as f_out:
                     f_out.write(f_in.read())
             compressed_paths.append(f"{file_path}.gz")
-            write_logs(f"{file_path}\tThis file was successfully compressed!")
+            write_logs(file_path, "This file was successfully compressed!")
         elif file_type==0:
-            write_logs(f"{file_path}\tNOT compressed! This is a symlink!")
+            write_logs(file_path,"NOT compressed! This is a symlink!")
         else:
-            write_logs(f"{file_path}\tNOT compressed! Uunknown filetype!")
+            write_logs(file_path, "NOT compressed! Uunknown filetype!")
     return compressed_paths
 
 def validate_compress_files(compressed_paths):
@@ -87,21 +87,21 @@ def validate_compress_files(compressed_paths):
             # Validate .tar.gz file
             try:
                 subprocess.check_call(['tar', 'tzf', file_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                write_logs(f"{file_path}\tValidation of zipped file was Successfull")
+                write_logs(file_path,"Validation of zipped file was Successfull")
             except subprocess.CalledProcessError:
-                write_logs(f"{file_path}\tValidation of this zipped file Failed!")
+                write_logs(file_path, "Validation of this zipped file Failed!")
                 validation_results.append(False)
         elif file_path.endswith('.gz'):
             # Validate .gz file
             try:
                 subprocess.check_call(['gunzip', '-t', file_path])
-                write_logs(f"{file_path}\tValidation of zipped file was Successfull!")
+                write_logs(file_path, "Validation of zipped file was Successfull!")
             except subprocess.CalledProcessError:
-                write_logs(f"{file_path}\tValidation of zipped file was Failed!")
+                write_logs(file_path, "Validation of zipped file was Failed!")
                 validation_results.append(False)
         else:
             # Invalid file type
-            write_logs(f"{file_path}\tValidation failed: Unknown filetype!")
+            write_logs(file_path,"Validation failed: Unknown filetype!")
             validation_results.append(False)
     return validation_results
 
@@ -130,7 +130,7 @@ def reduce_cobg_dir(path):
         if (d[-7:] in patern_to_compress):
             files_to_compress.append(d)
     if not files_to_compress:
-        write_logs(f"{path}\tNothing to compress or delete!")
+        write_logs(path,"Nothing to compress or delete!")
     else:
         compressed_paths=compress_files(files_to_compress)
         validation_results=validate_compress_files(compressed_paths)
@@ -138,9 +138,9 @@ def reduce_cobg_dir(path):
         if all(validation_results):
             delete_files(files_to_delete)
             delete_files(files_to_compress)
-            write_logs(f"{path}\tFINISHED!!!")
+            write_logs(path,"FINISHED!!!")
         else:
-            write_logs(f"{path}\tFAILED!!!")
+            write_logs(path,"FAILED!!!")
 
 def reduce_tmp_report(path):
     path = str(path)
@@ -158,34 +158,35 @@ def reduce_tmp_report(path):
     
     if all(validation_results):
         delete_files(files_to_compress)
-        write_logs(f"{path}\tFINISHED!!!")
+        write_logs(path,"FINISHED!!!")
     else:
-        write_logs(f"\t{path}\tFAILED!!!")
+        write_logs(path, "FAILED!!!")
+
+def remove_zero_files(path):
+    empty_files=find_empty_files(path)
+    nfiles=len(empty_files)
+    if nfiles == 0:
+        write_logs(path,"EXITING: nothing to delete here")
+    else:
+        delete_files(empty_files)
+        write_logs(path,f"Deleted {nfiles} file from this. FINISHED!!!")
 
 if __name__ == '__main__':
     args=parser.parse_args()
     path=Path(args.dir)
-    write_logs(f"{path}\tScript started!")
+    write_logs(path,"Script started!")
     rest_path, last_dir=get_last_dir_and_rest(path)
     try:
         if check_file_type(path)!=1:
-            write_logs(f"{path}\tEXITING: This is NOT a directroy or this directroy doesn't EXIST!")
+            write_logs(path, "EXITING: This is NOT a directroy or this directroy doesn't EXIST!")
             exit()
         if last_dir=="cobg_dir_genome_wide":
             reduce_cobg_dir(path)
-            if args.delfiles:
-                empty_files=find_empty_files(path)
-                delete_files(empty_files)
         elif last_dir[0:11]=="tmp_report_":
             reduce_tmp_report(path)
-            if args.delfiles:
-                empty_files=find_empty_files(path)
-                delete_files(empty_files)
-                write_logs(f"{path}\tWas here!!!\n")
         elif args.delfiles:
-            empty_files=find_empty_files(path)
-            delete_files(empty_files)
+            remove_zero_files(path)
         else:
-            write_logs(f"{path}\tEXITING: This is NOT a cobg_dir_genome_wide or tmp_report_ directroy!")
+            write_logs(path,"EXITING: This is NOT a cobg_dir_genome_wide or tmp_report_ directroy!")
     except Exception as e:
-        write_logs(f"{path}\tERROR:{e}")
+        write_logs(path,"ERROR:{e}")
