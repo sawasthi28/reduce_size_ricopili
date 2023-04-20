@@ -101,6 +101,19 @@ def validate_compress_files(compressed_paths):
             validation_results.append(False)
     return validation_results
 
+def find_empty_files(path):
+    empty_files=[]
+    for root, dirs, files in os.walk(path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            if os.path.isfile(filepath):
+                # Get the metadata of the file using os.stat()
+                stat_info = os.stat(filepath)
+                # Check if the file size is zero bytes
+                if stat_info.st_size == 0:
+                    empty_files.append(filepath)
+    return empty_files
+
 def reduce_cobg_dir(path):
     patern_to_delete=['.bg.fam','.bg.bed','bgs.fam','bgs.bed']
     files_to_delete=[]
@@ -144,15 +157,6 @@ def reduce_tmp_report(path):
         logger_object.log(f"{path}\tFINISHED!!!")
     else:
         logger_object.log(f"\t{path}\tFAILED!!!")
-
-def find_empty_files(path):
-    empty_files=[]
-    for root, dirs, files in os.walk(path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            if os.path.isfile(filepath) and os.path.getsize(filepath) == 0:
-                empty_files.append(filepath)
-    return empty_files
 
 if __name__ == '__main__':
     logger_object = Logger('reduce_size.v1.log')
