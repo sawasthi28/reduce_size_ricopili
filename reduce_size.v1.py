@@ -16,6 +16,7 @@ from pathlib import Path
 parser=argparse.ArgumentParser()
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--dir', default=None, type=str, help="full path of the directory work on \"tmp_report_*\" and \"cobg_dir_genome_wide\"", required=True)
+parser.add_argument('--delfiles', action='store_true', help="required if you want to delete files with size 0")
 TODAY_YMD = '_'.join(datetime.datetime.today().strftime("%c").split())
 
 class Logger(object):
@@ -23,7 +24,7 @@ class Logger(object):
         self.log_fh = open(fh, 'a')
     def log(self, line):
         self.log_fh.write(line)
-
+    
 def get_last_dir_and_rest(path):
     rest_path, last_dir = os.path.split(path)
     return rest_path, last_dir
@@ -144,6 +145,15 @@ def reduce_tmp_report(path):
     else:
         logger_object.log(f"{TODAY_YMD}\t{path}\tFAILED!!!\n")
 
+def find_empty_files(path):
+    empty_files=[]
+    for root, dirs, files in os.walk(path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            if os.path.isfile(filepath) and os.path.getsize(filepath) == 0:
+                empty_files.append(filepath)
+    return empty_files
+
 if __name__ == '__main__':
     logger_object = Logger('reduce_size.v1.log')
     args=parser.parse_args()
@@ -156,8 +166,17 @@ if __name__ == '__main__':
             exit()
         if last_dir=="cobg_dir_genome_wide":
             reduce_cobg_dir(path)
+            if args.delfiles:
+                empty_files=find_empty_files(path)
+                delete_files(empty_files)
         elif last_dir[0:11]=="tmp_report_":
             reduce_tmp_report(path)
+            if args.delfiles:
+                empty_files=find_empty_files(path)
+                delete_files(empty_files)
+        elif args.delfiles:
+            empty_files=find_empty_files(path)
+            delete_files(empty_files)
         else:
             logger_object.log(f"{TODAY_YMD}\t{path}\tEXITING: Not a cobg_dir_genome_wide or tmp_report_ directroy!\n")
     except Exception as e:
