@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script will reduce the size of ricopili directories. Please note that it will DELETE some of the files from the directories. See this document for details: https://docs.google.com/document/d/1ixnzlOzb-x92PBam769nB5uMh3UAcaDDSoEZG36z6xc/edit#
+This script will reduce the size of ricopili directories (such as tmp_report_* & cobg_dir_genome_wide) and could also delete all the files with size 0 recursively. Please note that it will DELETE some of the files from the directories. Please see this document for details: https://docs.google.com/document/d/1ixnzlOzb-x92PBam769nB5uMh3UAcaDDSoEZG36z6xc/edit#
 """
 import argparse
 import glob
@@ -17,7 +17,7 @@ parser=argparse.ArgumentParser()
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--dir', default=None, type=str, help="full path of the directory work on \"tmp_report_*\" and \"cobg_dir_genome_wide\"", required=True)
 parser.add_argument('--delfiles', action='store_true', help="required if you want to delete files with size 0")
-
+parser.add_argument('--allfunctions', action='store_true', help="required if you want to perform all the 3 tasks (find plus clean i.e. tmp_report*, cobg_dir* & delte files with size 0)")
 class Logger(object):
     def __init__(self, fh):
         self.log_fh = open(fh, 'a')
@@ -175,6 +175,14 @@ def remove_zero_files(path):
         delete_files(empty_files)
         write_logs(f"Deleted {nfiles} file/s from this. FINISHED!!!")
 
+def find_dir_with_pattern(path, pattern):
+    matching_paths = []
+    for root, dirs, files in os.walk(path):
+        for dir_name in dirs:
+            if pattern in dir_name:
+                matching_paths.append(os.path.join(root, dir_name))
+    return matching_paths
+
 if __name__ == '__main__':
     args=parser.parse_args()
     global global_path
@@ -187,18 +195,46 @@ if __name__ == '__main__':
             write_logs("Script started!")
             write_logs("EXITING: This is NOT a directroy or this directroy doesn't EXIST!")
             exit()
-        elif args.delfiles:
-            write_logs("Script started!")
-            remove_zero(path)
-        elif last_dir=="cobg_dir_genome_wide":
-            write_logs("Script started!")
-            reduce_cobg_dir(path)
-        elif last_dir[0:11]=="tmp_report_":
-            global_path=rest_path
-            write_logs("Script started!")
-            reduce_tmp_report(path)
-        else:
-            write_logs("Script started!")
-            write_logs("EXITING: This is NOT a cobg_dir_genome_wide or tmp_report_ directroy!")
+
+        if check_file_type(path)==1:
+            if args.allfunctions:
+                write_logs("Script started!")
+                cob_path=find_dir_with_pattern(path, "cobg_dir_genome_wide")
+                tmp_path=find_dir_with_pattern(path, "tmp_report_")
+                ###
+                try:
+                    for p in tmp_path:
+                        reduce_tmp_report(p)
+                except Exception as e:
+                    write_logs(f"ERROR in function reduce_tmp_report :{e}")
+                ###
+                try:
+                    for p in cob_path:
+                        reduce_cobg_dir(p)
+                except Exception as e:
+                    write_logs(f"ERROR in function reduce_cobg_dir :{e}")
+                ###
+                try:
+                    remove_zero(path)
+                except Exception as e:
+                    write_logs(f"ERROR in function remove_zero :{e}")
+            
+            elif args.delfiles:
+                write_logs("Script started!")
+                remove_zero(path)
+            
+            elif last_dir=="cobg_dir_genome_wide":
+                write_logs("Script started!")
+                reduce_cobg_dir(path)
+            
+            elif last_dir[0:11]=="tmp_report_":
+                global_path=rest_path
+                write_logs("Script started!")
+                reduce_tmp_report(path)
+            
+            else:
+                write_logs("Script started!")
+                write_logs("EXITING: This is NOT a cobg_dir_genome_wide or tmp_report_ directroy!")
+    
     except Exception as e:
         write_logs(f"ERROR:{e}")
