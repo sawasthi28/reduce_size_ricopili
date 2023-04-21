@@ -74,14 +74,15 @@ def compress_files(file_paths):
         file_type=check_file_type(file_path)
         if file_type==1:
             with tarfile.open(f"{file_path}.tar.gz", "w:gz") as tar:
-                tar.add(path, arcname=os.path.basename(file_path))
+                tar.add(file_path, arcname=os.path.basename(file_path))
             compressed_paths.append(f"{file_path}.tar.gz")
             write_logs(f"This file was successfully compressed! : {file_path}.tar.gz")
 
         elif file_type==2:
-            with open(file_path, "rb") as f_in:
-                with gzip.open(f"{file_path}.gz", "wb") as f_out:
-                    f_out.write(f_in.read())
+            subprocess.run(["gzip", "-f", "-c", file_path], stdout=open(f"{file_path}.gz", "wb"))
+            #with open(file_path, "rb") as f_in:
+            #    with gzip.open(f"{file_path}.gz", "wb") as f_out:
+            #        f_out.write(f_in.read())
             compressed_paths.append(f"{file_path}.gz")
             write_logs(f"This file was successfully compressed! : {file_path}.gz")
         elif file_type==0:
@@ -223,13 +224,13 @@ if __name__ == '__main__':
                 ###
                 try:
                     write_logs('_','_')
-                    remove_zero(path)
+                    remove_zero_files(path)
                 except Exception as e:
                     write_logs(f"ERROR in function remove_zero :{e}")
             
             elif args.delfiles:
                 write_logs("Script started!")
-                remove_zero(path)
+                remove_zero_files(path)
             
             elif last_dir=="cobg_dir_genome_wide":
                 write_logs("Script started!")
