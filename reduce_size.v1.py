@@ -18,20 +18,26 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--dir', default=None, type=str, help="full path of the directory work on \"tmp_report_*\" and \"cobg_dir_genome_wide\"", required=True)
 parser.add_argument('--delfiles', action='store_true', help="required if you want to delete files with size 0")
 parser.add_argument('--allfunctions', action='store_true', help="required if you want to perform all the 3 tasks (find plus clean i.e. tmp_report*, cobg_dir* & delte files with size 0)")
+
 class Logger(object):
     def __init__(self, fh):
         self.log_fh = open(fh, 'a')
     def log(self, line):
         TODAY_YMD = '_'.join(datetime.datetime.today().strftime("%c").split())
         self.log_fh.write(f"{TODAY_YMD}\t{line}\n")
+    def log_sep(self):
+        self.log_fh.write(f"{'_'*200}\n")
 
 def get_last_dir_and_rest(path):
     rest_path, last_dir = os.path.split(path)
     return rest_path, last_dir
 
-def write_logs(line):
+def write_logs(line, print_sep=None):
     logger_object = Logger(f'{global_path}/reduce_size.v1.log')
-    logger_object.log(f"{path}\t{line}")
+    if print_sep is None:
+        logger_object.log(f"{path}\t{line}")
+    else:
+        logger_object.log_sep()
 
 def get_last_dir_and_rest(path):
     rest_path, last_dir = os.path.split(path)
@@ -151,7 +157,6 @@ def reduce_tmp_report(path):
     patern_to_delete=['.fam','.bim','.bed'] 
     files_to_delete=[]
     files_to_compress=[path] 
-    
     for d in glob.glob(f"{path}/*"):
         if (d[-4:]) in patern_to_delete:
             files_to_delete.append(d)
@@ -204,17 +209,20 @@ if __name__ == '__main__':
                 ###
                 try:
                     for p in tmp_path:
+                        write_logs('_','_')
                         reduce_tmp_report(p)
                 except Exception as e:
                     write_logs(f"ERROR in function reduce_tmp_report :{e}")
                 ###
                 try:
                     for p in cob_path:
+                        write_logs('_','_')
                         reduce_cobg_dir(p)
                 except Exception as e:
                     write_logs(f"ERROR in function reduce_cobg_dir :{e}")
                 ###
                 try:
+                    write_logs('_','_')
                     remove_zero(path)
                 except Exception as e:
                     write_logs(f"ERROR in function remove_zero :{e}")
