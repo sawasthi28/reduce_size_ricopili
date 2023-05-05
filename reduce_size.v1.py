@@ -11,6 +11,7 @@ import gzip
 import tarfile
 import shutil
 import contextlib
+import re
 from pathlib import Path
 
 parser=argparse.ArgumentParser()
@@ -80,9 +81,6 @@ def compress_files(file_paths):
 
         elif file_type==2:
             subprocess.run(["gzip", "-f", "-c", file_path], stdout=open(f"{file_path}.gz", "wb"))
-            #with open(file_path, "rb") as f_in:
-            #    with gzip.open(f"{file_path}.gz", "wb") as f_out:
-            #        f_out.write(f_in.read())
             compressed_paths.append(f"{file_path}.gz")
             write_logs(f"This file was successfully compressed! : {file_path}.gz")
         elif file_type==0:
@@ -132,7 +130,8 @@ def find_empty_files(path):
 def reduce_cobg_dir(path):
     patern_to_delete=['.bg.fam','.bg.bed','bgs.fam','bgs.bed']
     files_to_delete=[]
-    patern_to_compress=['bgn.fam','bgn.bed','bgn.bim', '.bg.bim','bgs.bim']
+    #patern_to_compress=['bgn.fam','bgn.bed','bgn.bim', '.bg.bim','bgs.bim']
+    patern_to_compress=['.bg.bim','bgs.bim']
     files_to_compress=[]
     path = str(path)
     for d in glob.glob(f"{path}/*"):
@@ -172,6 +171,16 @@ def reduce_tmp_report(path):
     else:
         write_logs( "FAILED!!!")
 
+def reduce_dasuqc1(path):
+    path=[f"{path}/info"]
+    compressed_paths=compress_files(path)
+    validation_results=validate_compress_files(compressed_paths)
+    if all(validataion_results):
+        delelte_files(path)
+        write_logs("FINISHED!!!")
+    else:
+        write_logs("FAILED!!!")
+
 def remove_zero_files(path):
     empty_files=find_empty_files(path)
     nfiles=len(empty_files)
@@ -181,13 +190,14 @@ def remove_zero_files(path):
         delete_files(empty_files)
         write_logs(f"Deleted {nfiles} file/s from this. FINISHED!!!")
 
-def find_dir_with_pattern(path, pattern):
+def find_files_or_dirs(path, pattern):
     matching_paths = []
     for root, dirs, files in os.walk(path):
-        for dir_name in dirs:
-            if pattern in dir_name:
-                matching_paths.append(os.path.join(root, dir_name))
+        for filename in files + dirs:
+            if re.search(pattern, filename):
+                matching_paths.append(os.path.join(root, filename))
     return matching_paths
+
 
 if __name__ == '__main__':
     args=parser.parse_args()
@@ -205,23 +215,43 @@ if __name__ == '__main__':
         if check_file_type(path)==1:
             if args.allfunctions:
                 write_logs("Script started!")
-                cob_path=find_dir_with_pattern(path, "cobg_dir_genome_wide")
-                tmp_path=find_dir_with_pattern(path, "tmp_report_")
-                ###
+                cob_path=       find_files_or_dirs(path, "cobg_dir_genome_wide")
+                tmp_path=       find_files_or_dirs(path, r"tmp_report_.*")
+                errandout_path= find_files_or_dirs(path, "errandout")
+                dasuqc1_path=   find_files_or_dirs(path, r"dasuqc1_.*")
+                print(cob_path)
+                print(tmp_path)
+                print(errandout_path)
+                print(dasuqc1_path)
+                exit()
+                ###Delete all errandout directories 
+                try:
+                    write_logs('_','_')
+                    delete_files(errandout_path)
+                except Exception as e:
+                    write_logs(f"Error in deleting errandout directroy :{e}")
+                ### dasuqc1
+                try:
+                    for p in dasuqc1_path:
+                        write_logs('_','_')
+                        reduce_dasuqc1(p)
+                except Exception as e:
+                    write_logs(f"ERROR in function reduce_dasuqc1 :{e}")
+                ### tmp_report
                 try:
                     for p in tmp_path:
                         write_logs('_','_')
                         reduce_tmp_report(p)
                 except Exception as e:
                     write_logs(f"ERROR in function reduce_tmp_report :{e}")
-                ###
+                ### cobdg_
                 try:
                     for p in cob_path:
                         write_logs('_','_')
                         reduce_cobg_dir(p)
                 except Exception as e:
                     write_logs(f"ERROR in function reduce_cobg_dir :{e}")
-                ###
+                ###Delete a files with size 0 excludes symlinks
                 try:
                     write_logs('_','_')
                     remove_zero_files(path)
