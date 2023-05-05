@@ -218,12 +218,8 @@ if __name__ == '__main__':
                 cob_path=       find_files_or_dirs(path, "cobg_dir_genome_wide")
                 tmp_path=       find_files_or_dirs(path, r"tmp_report_.*")
                 errandout_path= find_files_or_dirs(path, "errandout")
-                dasuqc1_path=   find_files_or_dirs(path, r"dasuqc1_.*")
-                print(cob_path)
-                print(tmp_path)
-                print(errandout_path)
-                print(dasuqc1_path)
-                exit()
+                dasuqc1_path=   find_files_or_dirs(path, r"dasuqc1_.*"))
+
                 ###Delete all errandout directories 
                 try:
                     write_logs('_','_')
