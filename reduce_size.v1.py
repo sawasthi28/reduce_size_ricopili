@@ -86,7 +86,7 @@ def compress_files(file_paths):
         elif file_type==0:
             write_logs(f"NOT compressed! This is a symlink! : {file_path}")
         else:
-            write_logs(f"NOT compressed! Uunknown filetype! : {file_path}")
+            write_logs(f"NOT compressed! This directory doesn't exist! : {file_path}")
     return compressed_paths
 
 def validate_compress_files(compressed_paths):
@@ -127,10 +127,18 @@ def find_empty_files(path):
                     empty_files.append(filepath)
     return empty_files
 
+def compress_validate_delete(path):
+    compressed_paths=compress_files(path)
+    validation_results=validate_compress_files(compressed_paths)
+    if all(validation_results):
+        delete_files(path)
+        write_logs("FINISHED!!!")
+    else:
+        write_logs("FAILED!!!")
+
 def reduce_cobg_dir(path):
     patern_to_delete=['.bg.fam','.bg.bed','bgs.fam','bgs.bed']
     files_to_delete=[]
-    #patern_to_compress=['bgn.fam','bgn.bed','bgn.bim', '.bg.bim','bgs.bim']
     patern_to_compress=['.bg.bim','bgs.bim']
     files_to_compress=[]
     path = str(path)
@@ -139,9 +147,8 @@ def reduce_cobg_dir(path):
             files_to_delete.append(d)
         if (d[-7:] in patern_to_compress):
             files_to_compress.append(d)
-    if not files_to_compress:
-        write_logs("Nothing to compress or delete!")
-    else:
+
+    if files_to_compress:
         compressed_paths=compress_files(files_to_compress)
         validation_results=validate_compress_files(compressed_paths)
         
@@ -156,37 +163,28 @@ def reduce_tmp_report(path):
     path = str(path)
     patern_to_delete=['.fam','.bim','.bed'] 
     files_to_delete=[]
-    files_to_compress=[path] 
     for d in glob.glob(f"{path}/*"):
         if (d[-4:]) in patern_to_delete:
             files_to_delete.append(d)
 
     delete_files(files_to_delete)
-    compressed_paths=compress_files(files_to_compress)
-    validation_results=validate_compress_files(compressed_paths)
-    
-    if all(validation_results):
-        delete_files(files_to_compress)
-        write_logs("FINISHED!!!")
-    else:
-        write_logs( "FAILED!!!")
+    compress_validate_delete([path])
 
-def reduce_dasuqc1(path):
-    path=[f"{path}/info"]
-    compressed_paths=compress_files(path)
-    validation_results=validate_compress_files(compressed_paths)
-    if all(validataion_results):
-        delelte_files(path)
-        write_logs("FINISHED!!!")
-    else:
-        write_logs("FAILED!!!")
+def reduce_pcaer_sub(path):
+    path =str(path)
+    patern_to_delete=['.menv.mds.asso-nup.pdf.gz']
+    files_to_delete=[]
+    for d in glob.glob(f"{path}/*"):
+        if (d[-25:]) in patern_to_delete:
+            files_to_delete.append(d)
+    
+    delete_files(files_to_delete)
+    compress_validate_delete([path])
 
 def remove_zero_files(path):
     empty_files=find_empty_files(path)
     nfiles=len(empty_files)
-    if nfiles == 0:
-        write_logs("EXITING: nothing to delete here")
-    else:
+    if nfiles > 0:
         delete_files(empty_files)
         write_logs(f"Deleted {nfiles} file/s from this. FINISHED!!!")
 
@@ -215,38 +213,80 @@ if __name__ == '__main__':
         if check_file_type(path)==1:
             if args.allfunctions:
                 write_logs("Script started!")
-                cob_path=       find_files_or_dirs(path, "cobg_dir_genome_wide")
-                tmp_path=       find_files_or_dirs(path, r"tmp_report_.*")
-                errandout_path= find_files_or_dirs(path, "errandout")
-                dasuqc1_path=   find_files_or_dirs(path, r"dasuqc1_.*"))
+                cob_path=        find_files_or_dirs(path, "^cobg_dir_genome_wide$")
+                tmp_path=        find_files_or_dirs(path, r"^tmp_report_.*\d$")
+                errandout_path=  find_files_or_dirs(path, "^errandout$")
+                dasuqc1_path=    find_files_or_dirs(path, r"^dasuqc1_.*hg19.ch.fl$")
+                resdaner_path=   find_files_or_dirs(path, "^resdaner$")
+                assoc_dos_path=  find_files_or_dirs(path, r"^dan_.*assoc.dosage.ngt.gz$")
+                pca_qassoc_path= find_files_or_dirs(path, r".*.menv.assomds.*qassoc$")
+                pca_assopdf_path=find_files_or_dirs(path, r".*.menv.mds.asso.pdf$")
 
                 ###Delete all errandout directories 
-                try:
-                    write_logs('_','_')
-                    delete_files(errandout_path)
-                except Exception as e:
-                    write_logs(f"Error in deleting errandout directroy :{e}")
-                ### dasuqc1
-                try:
-                    for p in dasuqc1_path:
+                if len(errandout_path)>0:
+                    try:
                         write_logs('_','_')
-                        reduce_dasuqc1(p)
-                except Exception as e:
-                    write_logs(f"ERROR in function reduce_dasuqc1 :{e}")
+                        delete_files(errandout_path)
+                    except Exception as e:
+                        write_logs(f"ERROR in deleting errandout directroy :{e}")
+
+                ### compress, validate and delete (CVD) dasuqc1_*/info directory 
+                if len(dasuqc1_path)>0:
+                    try:
+                        dasuqc1_info_path = [f"{p}/info" for p in dasuqc1_path if check_file_type(p)==1]
+                        write_logs('_','_')
+                        compress_validate_delete(dasuqc1_info_path)
+                    except Exception as e:
+                        write_logs(f"ERROR while CVD dasuqc_*/ :{e}")
+                
+                ### delete files (*menv.mds.asso.pdf, *mds.asso-nup.pdf.gz and *menv.assomds*qassoc) from pcaer_*  and then CVD
+                if len(pca_qassoc_path)>0:
+                    try:
+                        write_logs('_','_')
+                        pcaer_sub_path = list(set([os.path.dirname(os.path.dirname(p)) for p in pca_qassoc_path]))
+                        delete_files(pca_qassoc_path+pca_assopdf_path)
+                        for p in pcaer_sub_path:
+                            write_logs('_','_')
+                            reduce_pcaer_sub(p)
+                    except Exception as e:
+                        write_logs(f"ERROR in deleting or CVD from pcaer_* :{e}")
+
+                ### CVD resdaner directory
+                if len(resdaner_path)>0:
+                    try:
+                        write_logs('_','_')
+                        compress_validate_delete(resdaner_path)
+                    except Exception as e:
+                        write_logs(f"ERROR while CVD resdaner :{e}")
+
+                ### deleting *assoc.dosage.ngt.gz files and CVD daner_subdirs   
+                if len(assoc_dos_path)>0: 
+                    try:
+                        write_logs('_','_')
+                        daner_paths = list(set([os.path.dirname(os.path.dirname(p)) for p in assoc_dos_path]))
+                        delete_files(assoc_dos_path)
+                        compress_validate_delete(daner_paths)
+                    except Exception as e:
+                        write_logs(f"ERROR in deleting or CVD *assoc.dosage.ngt.gz and daner_subdirs respectively :{e}")
+                
                 ### tmp_report
-                try:
-                    for p in tmp_path:
-                        write_logs('_','_')
-                        reduce_tmp_report(p)
-                except Exception as e:
-                    write_logs(f"ERROR in function reduce_tmp_report :{e}")
+                if len(tmp_path)>0:
+                    try:
+                        for p in tmp_path:
+                            write_logs('_','_')
+                            reduce_tmp_report(p)
+                    except Exception as e:
+                        write_logs(f"ERROR in function reduce_tmp_report :{e}")
+                
                 ### cobdg_
-                try:
-                    for p in cob_path:
-                        write_logs('_','_')
-                        reduce_cobg_dir(p)
-                except Exception as e:
-                    write_logs(f"ERROR in function reduce_cobg_dir :{e}")
+                if len(cob_path)>0:
+                    try:
+                        for p in cob_path:
+                            write_logs('_','_')
+                            reduce_cobg_dir(p)
+                    except Exception as e:
+                        write_logs(f"ERROR in function reduce_cobg_dir :{e}")
+                
                 ###Delete a files with size 0 excludes symlinks
                 try:
                     write_logs('_','_')
