@@ -230,11 +230,18 @@ if __name__ == '__main__':
                     except Exception as e:
                         write_logs(f"ERROR in deleting errandout directroy :{e}")
 
+                ###Delete a files with size 0 excludes symlinks
+                try:
+                    write_logs('_','_')
+                    remove_zero_files(path)
+                except Exception as e:
+                    write_logs(f"ERROR in function remove_zero :{e}")
+
                 ### compress, validate and delete (CVD) dasuqc1_*/info directory 
                 if len(dasuqc1_path)>0:
                     try:
-                        dasuqc1_info_path = [f"{p}/info" for p in dasuqc1_path if check_file_type(p)==1]
                         write_logs('_','_')
+                        dasuqc1_info_path = [f"{p}/info" for p in dasuqc1_path if check_file_type(p)==1]
                         compress_validate_delete(dasuqc1_info_path)
                     except Exception as e:
                         write_logs(f"ERROR while CVD dasuqc_*/ :{e}")
@@ -286,13 +293,6 @@ if __name__ == '__main__':
                             reduce_cobg_dir(p)
                     except Exception as e:
                         write_logs(f"ERROR in function reduce_cobg_dir :{e}")
-                
-                ###Delete a files with size 0 excludes symlinks
-                try:
-                    write_logs('_','_')
-                    remove_zero_files(path)
-                except Exception as e:
-                    write_logs(f"ERROR in function remove_zero :{e}")
             
             elif args.delfiles:
                 write_logs("Script started!")
