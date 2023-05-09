@@ -212,7 +212,8 @@ if __name__ == '__main__':
                 assoc_dos_path=  find_files_or_dirs(path, r"^dan_.*assoc.dosage.ngt.gz$")
                 pca_qassoc_path= find_files_or_dirs(path, r".*.menv.assomds.*qassoc$")
                 pca_assopdf_path=find_files_or_dirs(path, r".*.menv.mds.asso.pdf$")
-
+                danscore_path   =find_files_or_dirs(path, r"^danscore_")
+                report_path     =find_files_or_dirs(path, r"^report_")
                 ###Delete all errandout directories 
                 if len(errandout_path)>0:
                     try:
@@ -275,6 +276,18 @@ if __name__ == '__main__':
                             reduce_cobg_dir(p,"cobg-dir")
                     except Exception as e:
                         write_logs(f"ERROR_cobg-dir_{e}")
+                ### danscore 
+                if len(danscore_path)>0:
+                    try:
+                        compress_validate_delete(danscore_path, "danscore")
+                    except Exception as e:
+                        write_logs(f"ERROR_danscore_{e}")
+                ### repor_sub
+                if len(report_path)>0:
+                    try:
+                        compress_validate_delete(report_path, "report-sub")
+                    except Exception as e:
+                        write_logs(f"ERROR_danscore_{e}")
             
             elif args.delfiles:
                 remove_zero_files(path, 'size-zero')
