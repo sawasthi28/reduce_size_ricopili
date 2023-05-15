@@ -498,7 +498,7 @@ if __name__ == '__main__':
                 
                 for unit in total_each:
                     write_logs(unit, "_")
-
+            write_logs("Script-finished", '0')
             write_logs(f"Total_active\t{convert_bytes(single_size)}\t{single_count}\t{convert_bytes(rsingle_size)}\t{rsingle_count}\t{path}", "_")
             rtotal_size =convert_bytes(get_size(global_path)); rtotal_files=count_files(global_path)
             write_logs(f"Total_directroy\t{total_size}\t{total_files}\t{rtotal_size}\t{rtotal_files}\t{path}", "_")
