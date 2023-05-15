@@ -462,6 +462,7 @@ if __name__ == '__main__':
                         for p in dameta_path:
                             if os.path.isdir(p):
                                 size=get_size(p); count=count_files(p)
+                                ts+=size; tc+=count
                                 rsize, rcount=reduce_dameta(p, "dameta")
                                 rts+=rsize; rtc+=rcount
                                 write_logs(f"dCVD_dameta\t{convert_bytes(size)}\t{count}\t{convert_bytes(rsize)}\t{rcount}\t{p}", "_")
