@@ -7,6 +7,7 @@ import glob
 import os
 import subprocess
 import datetime
+import time
 import gzip
 import tarfile
 import shutil
@@ -30,6 +31,8 @@ class Logger(object):
             self.log_fh.write(f"{line}\n")
         elif summary=="0":
             self.log_fh.write(f"##{line}_{TODAY_YMD}\n")
+        elif summary=="1":
+            self.log_fh.write(f"##{line}\n")
         else:
             self.log_fh.write(f"{TODAY_YMD}\t{line}\n")
 
@@ -40,6 +43,9 @@ def write_logs(line, summary=None):
     elif summary=="0":
         logger_object = Logger(f'{global_path}/reduce_size_{filestamp}.all.logs')
         logger_object.log(f"{line}","0")
+    elif summary=="1":
+        logger_object = Logger(f'{global_path}/reduce_size_{filestamp}.all.logs')
+        logger_object.log(f"{line}","1")
     else:
         logger_object = Logger(f'{global_path}/reduce_size_{filestamp}.all.logs')
         logger_object.log(f"{line}")
@@ -268,6 +274,7 @@ def reduce_dasuqc1(path, outlog):
         return True 
 
 if __name__ == '__main__':
+    start_time = time.time()
     args=parser.parse_args()
     global_path=path=Path(args.dir)
     
@@ -498,10 +505,14 @@ if __name__ == '__main__':
                 
                 for unit in total_each:
                     write_logs(unit, "_")
-            write_logs("Script-finished", '0')
             write_logs(f"Total_active\t{convert_bytes(single_size)}\t{single_count}\t{convert_bytes(rsingle_size)}\t{rsingle_count}\t{path}", "_")
             rtotal_size =convert_bytes(get_size(global_path)); rtotal_files=count_files(global_path)
             write_logs(f"Total_directroy\t{total_size}\t{total_files}\t{rtotal_size}\t{rtotal_files}\t{path}", "_")
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            hours = int(elapsed_time // 3600); minutes = int((elapsed_time % 3600) // 60); seconds = int(elapsed_time % 60)
+            write_logs(f"Total-time-elapsed:\t{hours}:{minutes}:{seconds}",'1')
+
         else:
             print("Exiting: UnKnown FileType.")
     
