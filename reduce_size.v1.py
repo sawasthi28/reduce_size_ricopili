@@ -1,6 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 """
-This script will reduce (number of files and size of) the size of ricopili directories by deleting some files/directoires and compressing some files/directories. Please see this document for details: https://docs.google.com/document/d/1pAKygwzU2gJehx0jFdZ8TdZmHDp4ZvuANBsvD0oIqAw/edit#
+**********************************************************************************************************************************
+This script reduces (the number of files and the size of) the size of ricopili directories by \n\t1) permanently deleting some files/directoires \n\t1) compressing some files/directories. 
+Please see & read this document for details: https://docs.google.com/document/d/1pAKygwzU2gJehx0jFdZ8TdZmHDp4ZvuANBsvD0oIqAw/edit#
+**********************************************************************************************************************************
 """
 import argparse
 import glob
@@ -16,12 +19,42 @@ import re
 import math
 from pathlib import Path
 
-parser=argparse.ArgumentParser()
-parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--dir', default=None, type=str, help="full path to the directory from where you want to start the script recursively", required=True)
-parser.add_argument('--allfunctions', action='store_true', help="is required if you want to perform all the functions to reduce (number of files and size of) ricopili directories")
-filestamp=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+parser=argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+#
+parser.add_argument('--dir',         default=None, type=str, help="Full path of the directory from where you want to start this script recursively\n", required=True)
+#
+parser.add_argument('--gen_clean',  action='store_true', help="Recursively deletes \
+        \n\t1) all the files with size 0, \
+        \n\t2) deletes all the \"errandout\" directories.\n")
+#
+parser.add_argument('--qc1_clean',  action='store_true', help="Finds all \"tmp_report_*\" sub-directories of ricopili's QC module and \
+        \n\t1) deletes all plink files (*bim, *bed, *fam) from \"tmp_report_*\", \
+        \n\t2) compress-validate-delete \"tmp_report_*\" sub-directories.\n")
+#
+parser.add_argument('--pca_clean',  action='store_true', help="Finds all \"pcaer_*\" sub-directories of ricopili's PCA module and \
+        \n\t1) deletes *asso-nup.pdf.gz, \
+        \n\t2) deletes *menv.assomds.*qassoc, \
+        \n\t3) deletes *menv.mds.asso.pdf,\
+        \n\t4) compress-validate-delete the \"pcaer_*\" sub-directories.")
+#
+parser.add_argument('--imp_clean',  action='store_true', help="1) Finds all \"dasuqc1_*\" sub-directories of ricopili's imputation module and \
+        \n\ta) compress-validate-delete \"info\" sub-directories, \
+        \n\tb) completly delete (i.e., no compression) all sub-directories \"bgs, bg & bgn\" if present in \"dasuqc1_*\", \
+        \n\tc) compress-validate-delete \"qcf1\" sub-directories after deleting all files that are NOT *.ngt. \
+        \n2) Find all \"cobg_dir_genome_wide\" and \
+        \n\ta) compress-validate \"*bg.bim & *bgs.bim.\"\
+        \n\tb) then delete \"*.bg.fam/bim/bed & *.bgs.fam/bim/bed\"")
+#
+parser.add_argument('--post_clean',  action='store_true', help=\
+         "1) Find all \"resdaner\" directories and compress-validate-delete.\
+        \n2) Find all \"daner_*\" directories\n\ta) delete all dan*assoc.dosage.ngt.gz files and      \n\tb) then compress-validate-delete \"daner_*\" directories.\
+        \n3) Find all \"dameta_*\" directories\n\ta) delete all *metadaner.gz files and                \n\tb) then compress-validate-delete \"dameta_*\" directories.\
+        \n4) Find all \"report_*\" directories\n\ta) delete all daner*meta.gz & daner*het.gz files and \n\tb) then compress-validate-delete \"report_*\" directories.\
+        \n5) Find all \"danscore_*\" and compress-validate-delete.")
+#
+parser.add_argument('--all_actions', action='store_true', help="This option will perform ALL the above actions.\nThis means it will override all obove options")
 
+filestamp=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 class Logger(object):
     def __init__(self, fh):
         self.log_fh = open(fh, 'a')
@@ -288,13 +321,17 @@ if __name__ == '__main__':
             exit()
 
         elif os.path.isdir(path):
-            write_logs("Script-started", '0')
-            write_logs(f"#ACTIONs\tSIZE_before\tnFILES_before\tSIZE_after\tnFILES_after\tPATH", "_")
             total_size =convert_bytes(get_size(global_path)); total_files=count_files(global_path)
             single_size =0; single_count =0; rsingle_size=0; rsingle_count=0
             total_each=[]
             ##
-            if args.allfunctions:
+            if (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
+                write_logs("Script-started", '0')
+                write_logs(f"#ACTIONs\tSIZE_before\tnFILES_before\tSIZE_after\tnFILES_after\tPATH", "_")
+            else:
+                pass
+            ##
+            if (args.all_actions) | (args.gen_clean):
                 ##deleting all files with size 0
                 try:
                     count=remove_zero_files(path, "size-zero")
@@ -322,6 +359,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     write_logs(f"ERROR_errandout_{e}")
 
+            if (args.all_actions) | (args.qc1_clean):
                 ##reducing tmp_report directories
                 try:
                     tmp_path=find_files_or_dirs(path, r"^tmp_report_.*\d$")
@@ -340,6 +378,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     write_logs(f"ERROR_tmp-report_{e}")
 
+            if (args.all_actions) | (args.imp_clean):
                ##reducing cobg_dir  
                 try:
                     cobg_path=find_files_or_dirs(path, "^cobg_dir_genome_wide$")
@@ -382,7 +421,8 @@ if __name__ == '__main__':
                             total_each.append((f"Total_dasuqc1\t{ts}\t{tc}\t{rts}\t{rtc}\tNA"))
                 except Exception as e:
                     write_logs(f"ERROR_dasuqc1_{e}")
-
+            
+            if (args.all_actions) | (args.pca_clean):
                 ## reduce pcaer_sub
                 try:
                     pca_qassoc_path= find_files_or_dirs(path, r".*.menv.assomds.*qassoc$")
@@ -403,6 +443,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     write_logs(f"ERROR_pcaer-sub_{e}")
 
+            if (args.all_actions) | (args.post_clean):
                 ###CVD resdaner
                 try:
                     resdaner_path=find_files_or_dirs(path, "^resdaner$")
@@ -502,16 +543,23 @@ if __name__ == '__main__':
                         total_each.append((f"Total_daner-sub\t{ts}\t{tc}\t{rts}\t{rtc}\tNA"))
                 except Exception as e:
                         write_logs(f"ERROR_daner-sub_{e}")
-                
+
+            if not (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
+                print(f"\nNo action selected for the directroy: {global_path}.\n\ttotal disk size {total_size}\n\ttotal files {total_files}")
+            
+            if (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
                 for unit in total_each:
                     write_logs(unit, "_")
-            write_logs(f"Total_active\t{convert_bytes(single_size)}\t{single_count}\t{convert_bytes(rsingle_size)}\t{rsingle_count}\t{path}", "_")
-            rtotal_size =convert_bytes(get_size(global_path)); rtotal_files=count_files(global_path)
-            write_logs(f"Total_directroy\t{total_size}\t{total_files}\t{rtotal_size}\t{rtotal_files}\t{path}", "_")
-            end_time = time.time()
-            elapsed_time = end_time - start_time
-            hours = int(elapsed_time // 3600); minutes = int((elapsed_time % 3600) // 60); seconds = int(elapsed_time % 60)
-            write_logs(f"Total-time-elapsed:\t{hours}:{minutes}:{seconds}",'1')
+                write_logs(f"Total_active\t{convert_bytes(single_size)}\t{single_count}\t{convert_bytes(rsingle_size)}\t{rsingle_count}\t{path}", "_")
+                rtotal_size =convert_bytes(get_size(global_path)); rtotal_files=count_files(global_path)
+                write_logs(f"Total_directroy\t{total_size}\t{total_files}\t{rtotal_size}\t{rtotal_files}\t{path}", "_")
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                hours = int(elapsed_time // 3600); minutes = int((elapsed_time % 3600) // 60); seconds = int(elapsed_time % 60)
+                formatted_time = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                write_logs(f"Total-time-elapsed:\t{formatted_time}",'1')
+            else:
+                pass
 
         else:
             print("Exiting: UnKnown FileType.")
