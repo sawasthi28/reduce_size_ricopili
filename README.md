@@ -9,7 +9,7 @@ usage: reduce_size.v1.py [-h] --dir DIR [--gen_clean] [--qc1_clean]
                          [--all_actions]
 
 
-##To preform all the cleaning actions use --all_actions
+## To preform all the cleaning actions use --all_actions
 ```
 ./reduce_size.v1.py --dir /full/path/to/directory --all_actions
 ```
