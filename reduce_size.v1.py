@@ -321,13 +321,13 @@ if __name__ == '__main__':
             exit()
 
         elif os.path.isdir(path):
-            total_size =convert_bytes(get_size(global_path)); total_files=count_files(global_path)
             single_size =0; single_count =0; rsingle_size=0; rsingle_count=0
             total_each=[]
             ##
             if (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
                 write_logs("Script-started", '0')
                 write_logs(f"#ACTIONs\tSIZE_before\tnFILES_before\tSIZE_after\tnFILES_after\tPATH", "_")
+                total_size =convert_bytes(get_size(global_path)); total_files=count_files(global_path)
             else:
                 pass
             ##
@@ -545,6 +545,7 @@ if __name__ == '__main__':
                         write_logs(f"ERROR_daner-sub_{e}")
 
             if not (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
+                total_size =convert_bytes(get_size(global_path)); total_files=count_files(global_path)
                 print(f"\nNo action selected for the directroy: {global_path}.\n\ttotal disk size {total_size}\n\ttotal files {total_files}")
             
             if (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
