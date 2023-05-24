@@ -208,7 +208,10 @@ def find_empty_files(path):
 
 def compress_validate_delete(path, outlog):
     compressed_path=compress_files(path, outlog)
-    validation_result=validate_compress_files(compressed_path, outlog)
+    if compressed_path:
+        validation_result=validate_compress_files(compressed_path, outlog)
+    else:
+        return 
     if  validation_result:
         delete_files(path, outlog)
         return compressed_path
@@ -288,7 +291,7 @@ def reduce_dasuqc1(path, outlog):
                 status+=1
         ##
         sub_dir_qc1f=os.path.join(path, "qc1f")
-        patterns=["*.ngt"] # not to delete 
+        patterns=[".ngt"] # not to delete 
         if os.path.isdir(sub_dir_qc1f):
             files_to_delete = [file for file in glob.glob(os.path.join(sub_dir_qc1f, '*')) if not any(pattern in file for pattern in patterns)]
             for file in files_to_delete:
@@ -402,9 +405,10 @@ if __name__ == '__main__':
 
                 ## CVD dasuqc1
                 try:
-                    dasuqc1_path=find_files_or_dirs(path, r"^dasuqc1_.*.ch.fl$")
+                    dasuqc1_path=find_files_or_dirs(path, r"^dasuqc1_.*")
                     ts=0; tc=0; rts=0; rtc=0;
                     if len(dasuqc1_path)>0:
+                        status=False
                         for p in dasuqc1_path:
                             if os.path.isdir(p):
                                 size=get_size(p); count=count_files(p)
