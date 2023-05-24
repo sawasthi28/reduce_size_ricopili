@@ -143,24 +143,43 @@ def compress_files(file_path, outlog):
         write_logs(f"NotCompressed_SymLink_{outlog}\t{file_path}")
 
     elif os.path.isdir(file_path):
-        with tarfile.open(f"{file_path}.tar.gz", "w:gz") as tar:
-            tar.add(file_path, arcname=os.path.basename(file_path))
-        write_logs(f"Compressed_{outlog}\t{file_path}.tar.gz")
-        return f"{file_path}.tar.gz"
+        validation_file=f"{file_path}.tar.gz.validated"
+        if os.path.exists(validation_file):
+            with open(validation_file, 'r') as valfile:
+                 time= valfile.read()
+            write_logs(f"Validated_{outlog}\t{file_path}.tar.gz on\t{time}")
+            return f"{file_path}.tar.gz"
+        else:
+            with tarfile.open(f"{file_path}.tar.gz", "w:gz") as tar:
+                tar.add(file_path, arcname=os.path.basename(file_path))
+            write_logs(f"Compressed_{outlog}\t{file_path}.tar.gz")
+            return f"{file_path}.tar.gz"
 
     elif os.path.isfile(file_path):
-        subprocess.run(["gzip", "-f", "-c", file_path], stdout=open(f"{file_path}.gz", "wb"))
-        write_logs(f"Compressed_{outlog}\t{file_path}.gz")
-        return f"{file_path}.gz"
+        validation_file=f"{file_path}.gz.validated"
+        if os.path.exists(validation_file):
+            with open(validation_file, 'r') as valfile:
+                time= valfile.read()
+            write_logs(f"Validated_{outlog}\t{file_path}.tar.gz on\t{time}")
+            return f"{file_path}.gz"
+        else:
+            subprocess.run(["gzip", "-f", "-c", file_path], stdout=open(f"{file_path}.gz", "wb"))
+            write_logs(f"Compressed_{outlog}\t{file_path}.gz")
+            return f"{file_path}.gz"
     else:
         write_logs(f"NotCompressed_NotFound_{outlog}\t{file_path}")
 
 def validate_compress_files(compressed_path, outlog):
+    text = '_'.join(datetime.datetime.today().strftime("%c").split())
+    if os.path.exists(f"{compressed_path}.validated"):
+        return True
     if compressed_path.endswith('.tar.gz'):
         # Validate .tar.gz file
         try:
             subprocess.check_call(['tar', 'tzf', compressed_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             write_logs(f"Validated_{outlog}\t{compressed_path}")
+            with open(f"{compressed_path}.validated", 'w') as file:
+                file.write(text)
             return True
         except subprocess.CalledProcessError:
             write_logs(f"ValidationFailed_{outlog}\t{compressed_path}")
@@ -171,6 +190,8 @@ def validate_compress_files(compressed_path, outlog):
         try:
             subprocess.check_call(['gunzip', '-t', compressed_path])
             write_logs(f"Validated_{outlog}\t{compressed_path}")
+            with open(f"{compressed_path}.validated", 'w') as file:
+                file.write(text)
             return True
         except subprocess.CalledProcessError:
             write_logs(f"ValidationFailed_{outlog}\t{compressed_path}")
