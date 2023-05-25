@@ -19,7 +19,10 @@ import re
 import math
 from pathlib import Path
 
+__version__ = "2023_May.v.1.0"
+
 parser=argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument("--version", "-v", action="version", version=f"Version: {__version__}")
 #
 parser.add_argument('--dir',         default=None, type=str, help="Full path of the directory from where you want to start this script recursively\n", required=True)
 #
@@ -63,9 +66,9 @@ class Logger(object):
         if summary=="_":
             self.log_fh.write(f"{line}\n")
         elif summary=="0":
-            self.log_fh.write(f"##{line}_{TODAY_YMD}\n")
+            self.log_fh.write(f"##{line}_{TODAY_YMD}\n##Version: {__version__}\n")
         elif summary=="1":
-            self.log_fh.write(f"##{line}\n")
+            self.log_fh.write(f"##Version: {__version__}\n##{line}\n")
         else:
             self.log_fh.write(f"{TODAY_YMD}\t{line}\n")
 
@@ -350,7 +353,7 @@ if __name__ == '__main__':
             ##
             if (args.all_actions) | (args.gen_clean) |  (args.qc1_clean) | (args.pca_clean) | (args.imp_clean) | (args.post_clean):
                 write_logs("Script-started", '0')
-                write_logs(f"#ACTIONs\tSIZE_before\tnFILES_before\tSIZE_after\tnFILES_after\tPATH", "_")
+                write_logs(f"##Version: {__version__}\n##ACTIONs\tSIZE_before\tnFILES_before\tSIZE_after\tnFILES_after\tPATH", "_")
                 total_size =convert_bytes(get_size(global_path)); total_files=count_files(global_path)
             else:
                 pass
