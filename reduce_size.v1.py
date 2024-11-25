@@ -19,7 +19,7 @@ import re
 import math
 from pathlib import Path
 
-__version__ = "2023_May.v.1.0"
+__version__ = "2024v.1.1"
 
 parser=argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("--version", "-v", action="version", version=f"Version: {__version__}")
