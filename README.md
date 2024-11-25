@@ -1,5 +1,5 @@
 # reduce_size_ricopili
-This script will reduce the size of RICOPILI directories. Please note that it will DELETE some of the files from the directories. See this document for details: https://docs.google.com/document/d/1pAKygwzU2gJehx0jFdZ8TdZmHDp4ZvuANBsvD0oIqAw/edit#
+This script will reduce the size of RICOPILI directories. Please note that it will DELETE some of the files from the directories. See this document for details: https://docs.google.com/document/d/1PcDYJioa4iuNbk-CXvB2WZwKwt242EzYfqlLYti2LYM/edit?tab=t.0#heading=h.ssbz3raju240
 
 The script will run on Python 3.
 

@@ -408,7 +408,7 @@ if __name__ == '__main__':
             if (args.all_actions) | (args.imp_clean):
                ##reducing cobg_dir  
                 try:
-                    cobg_path=find_files_or_dirs(path, "^cobg_dir_genome_wide$")
+                    cobg_path=find_files_or_dirs(path, "^cobg_dir_genome_wide.*$")
                     ts=0; tc=0; rts=0; rtc=0
                     if len(cobg_path)>0:
                         for p in cobg_path:
